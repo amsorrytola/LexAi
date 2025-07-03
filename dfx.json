@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "LexAi_backend": {
+      "candid": "src/LexAi_backend/LexAi_backend.did",
+      "package": "LexAi_backend",
+      "type": "rust"
+    },
+    "LexAi_frontend": {
+      "dependencies": [
+        "LexAi_backend"
+      ],
+      "source": [
+        "src/LexAi_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "LexAi_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
