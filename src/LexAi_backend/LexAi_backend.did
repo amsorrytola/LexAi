@@ -1,3 +1,21 @@
+// LexAi_backend.did
+
+type Answer = record {
+  id: nat64;
+  question_id: nat64;
+  content: text;
+  timestamp: nat64;
+};
+
+type Question = record {
+  id: nat64;
+  content: text;
+  timestamp: nat64;
+  answer: opt Answer;
+};
+
 service : {
-    "greet": (text) -> (text) query;
-}
+  submit_question : (text) -> (text);
+  get_all_questions : () -> (vec Question) query;
+  answer_question : (nat64, text) -> (opt Answer);
+};

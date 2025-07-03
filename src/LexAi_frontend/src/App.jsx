@@ -5,12 +5,6 @@ function App() {
   const [greeting, setGreeting] = useState('');
 
   function handleSubmit(event) {
-    event.preventDefault();
-    const name = event.target.elements.name.value;
-    LexAi_backend.greet(name).then((greeting) => {
-      setGreeting(greeting);
-    });
-    return false;
   }
 
   return (
