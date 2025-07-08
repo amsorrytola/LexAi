@@ -3,15 +3,15 @@
 .idea/
 **/*~
 
-# Mac OSX temporary files
-.DS_Store
-**/.DS_Store
+# # Mac OSX temporary files
+# .DS_Store
+# **/.DS_Store
 
-# dfx temporary files
-.dfx/
+# # dfx temporary files
+# .dfx/
 
-# generated files
-**/declarations/
+# # generated files
+# **/declarations/
 
 # rust
 target/
