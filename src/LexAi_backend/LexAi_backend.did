@@ -1,1 +1,9 @@
-service : { whoami : () -> (principal) query }
+type User = record {
+  "principal" : principal;
+  username : opt text;
+  created_at : nat64;
+};
+service : {
+  get_my_user : () -> (opt record { text; nat64 }) query;
+  get_or_register_user : () -> (User);
+}
