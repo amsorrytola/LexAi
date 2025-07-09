@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Scale, Menu, X } from 'lucide-react';
-import LoginButton from './LoginButton';
+// import LoginButton from './LoginButton';
 import { Link } from "react-router-dom";
 
 
@@ -18,18 +18,16 @@ export default function Navbar({ scrollY }) {
             </span>
           </div>
           
-          {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
               <Link to="/" className="mr-4">Home</Link>
               <Link to="/ask" className="text-gray-700 hover:text-blue-600">Ask AI</Link>
               <Link to="/generate" className="text-gray-700 hover:text-blue-600">Generate Document</Link>
               
-              <LoginButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" />
+              {/* <LoginButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" /> */}
             </div>
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -41,7 +39,6 @@ export default function Navbar({ scrollY }) {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t animate-in slide-in-from-top-2 duration-200">
           <div className="px-2 pt-2 pb-3 space-y-1">
