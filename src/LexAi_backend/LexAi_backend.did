@@ -1,9 +1,34 @@
-type User = record {
-  "principal" : principal;
-  username : opt text;
-  created_at : nat64;
+import "ic:canister/http_request";
+
+type ChatMessage = record {
+  role: text;
+  content: text;
 };
+
+type ChatSession = record {
+  name: text;
+  messages: vec ChatMessage;
+};
+
 service : {
-  get_my_user : () -> (opt record { text; nat64 }) query;
-  get_or_register_user : () -> (User);
-}
+  start_session: (text) -> (text);
+  chat: (text, text) -> (text);
+  list_sessions: () -> (vec record { text; text });
+  get_session: (text) -> (opt ChatSession);
+
+  query_gemini_api: (text) -> (text);
+
+  // Avoid dot notation completely
+  transform: (record {
+    context : vec nat8;
+    response : record {
+      status : nat16;
+      headers : vec record { name : text; value : text };
+      body : vec nat8;
+    };
+  }) -> (record {
+    status : nat16;
+    headers : vec record { name : text; value : text };
+    body : vec nat8;
+  });
+};

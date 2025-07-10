@@ -1,203 +1,190 @@
-use std::cell::RefCell;
+use ic_cdk::{
+    api::canister_self,
+    management_canister::{
+        http_request, HttpHeader, HttpMethod, HttpRequestArgs, HttpRequestResult, TransformArgs,
+        TransformContext, TransformFunc,
+    },
+};
+use serde_json::json;
 use std::collections::HashMap;
-use ic_cdk::{caller as msg_caller, api::time}; // ✅ this works in ic-cdk 0.18+
-use ic_cdk_macros::{query, update};
-use candid::{CandidType, Principal};
+use candid::CandidType;
 use serde::{Deserialize, Serialize};
-use candid::export_service;
-use ic_llm::{ChatMessage, Model};
 
-
-//---------------------------------------State Management---------------------------------------
-/// State for each user
-#[derive(Clone, CandidType, Serialize, Deserialize)]
-struct User {
-    principal: Principal,
-    username: Option<String>,
-    created_at: u64,
+#[derive(Clone, Serialize, Deserialize, CandidType)]
+struct ChatMessage {
+    role: String,
+    content: String,
 }
 
-/// State for each session
-#[derive(Clone, CandidType, Serialize, Deserialize)]
-struct Session {
-    principal: Principal,
-    session_id: u64,
-    project_name: Option<String>,
+#[derive(Clone, Serialize, Deserialize, CandidType)]
+struct ChatSession {
+    name: String,
     messages: Vec<ChatMessage>,
-    created_at: u64,
-    system_prompt: Option<String>, 
 }
 
 
-//---------------------------------------Global State---------------------------------------
-// Global users map using thread_local + RefCell
+type SessionId = String;
+
+type Sessions = HashMap<SessionId, ChatSession>;
+
 thread_local! {
-    /// Thread-local storage for users
-    static USERS: RefCell<HashMap<Principal, User>> = RefCell::new(HashMap::new());
-    /// Thread-local storage for sessions
-    static SESSIONS: RefCell<HashMap<Principal, Vec<Session>>> = RefCell::new(HashMap::new());
-}
-
-//---------------------------------------Public API---------------------------------------
-
-//----------Authentication and User Management----------
-/// Registers or returns an existing user
-#[update]
-fn get_or_register_user() -> User {
-    let caller_principal = msg_caller();
-    let now = time();
-
-    USERS.with(|cell| {
-        let mut users = cell.borrow_mut();
-
-        if let Some(user) = users.get(&caller_principal) {
-            return user.clone();
-        }
-
-        let new_user = User {
-            principal: caller_principal,
-            username: None,
-            created_at: now,
-        };
-        users.insert(caller_principal, new_user.clone());
-        new_user
-    })
-}
-
-/// Return caller's username or "Anonymous" plus created timestamp
-#[query]
-fn get_my_user() -> Option<(String, u64)> {
-    let caller_principal = msg_caller();
-    USERS.with(|cell| {
-        cell.borrow().get(&caller_principal).map(|u| {
-            (
-                u.username.clone().unwrap_or_else(|| "Anonymous".to_string()),
-                u.created_at,
-            )
-        })
-    })
+    static SESSIONS: std::cell::RefCell<Sessions> = std::cell::RefCell::new(HashMap::new());
 }
 
 
-//----------Session Management----------
-/// Create new chat session
-#[update]
-fn start_new_session(project_name: Option<String>) -> u64 {
-    let principal = msg_caller();
-    let now = time();
-    let session_id = now; // or generate a better UUID-like ID
+#[ic_cdk::update]
+fn start_session(prompt: String) -> SessionId {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use sha2::{Sha256, Digest};
+    use hex;
 
-    let session = Session {
-        session_id,
-        project_name,
-        messages: vec![],
-        created_at: now,
+    // Fallback "unique-enough" ID using timestamp + prompt hash
+    let time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+    let mut hasher = Sha256::new();
+    hasher.update(&prompt);
+    let hash = hex::encode(hasher.finalize());
+
+    let session_id = format!("s_{}_{}", time, hash);
+
+    let name = prompt
+        .split_whitespace()
+        .take(5)
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    let initial_msg = ChatMessage {
+        role: "user".into(),
+        content: prompt.clone(),
     };
 
-    SESSIONS.with(|s| {
-        let mut all = s.borrow_mut();
-        all.entry(principal).or_default().push(session);
-    });
+    let session = ChatSession {
+        name,
+        messages: vec![initial_msg],
+    };
 
+    SESSIONS.with(|s| s.borrow_mut().insert(session_id.clone(), session));
     session_id
 }
 
-/// Add a message and get AI reply
-#[update]
-async fn chat_in_session(session_id: u64, input: String) -> String {
-    let principal = msg_caller();
-    let now = time();
+#[ic_cdk::update]
+async fn chat(session_id: SessionId, prompt: String) -> String {
+    let reply = query_gemini_api(&prompt).await;
 
-    let mut response_text = String::new();
-
-    // 1. Store user message
     SESSIONS.with(|s| {
-        let mut map = s.borrow_mut();
-        if let Some(sessions) = map.get_mut(&principal) {
-            if let Some(session) = sessions.iter_mut().find(|s| s.session_id == session_id) {
-                session.messages.push(ChatMessage::user(input.clone()));
-            }
+        let mut sessions = s.borrow_mut();
+        if let Some(session) = sessions.get_mut(&session_id) {
+            session.messages.push(ChatMessage {
+                role: "user".into(),
+                content: prompt.clone(),
+            });
+            session.messages.push(ChatMessage {
+                role: "assistant".into(),
+                content: reply.clone(),
+            });
         }
     });
 
-    // 2. Load messages
-    let mut messages = SESSIONS.with(|s| {
-        s.borrow().get(&principal)
-            .and_then(|sessions| sessions.iter().find(|s| s.session_id == session_id))
-            .map(|s| s.messages.clone())
-            .unwrap_or_default()
-    });
-
-    // ✅ 3. Add system prompt if available
-    SESSIONS.with(|s| {
-        if let Some(sessions) = s.borrow().get(&principal) {
-            if let Some(session) = sessions.iter().find(|s| s.session_id == session_id) {
-                if let Some(system_prompt) = &session.system_prompt {
-                    messages.insert(0, ChatMessage::system(system_prompt.clone()));
-                }
-            }
-        }
-    });
-
-    // 4. Send to LLM
-    let response = ic_llm::chat(Model::Llama3_1_8B)
-        .with_messages(messages.clone())
-        .send()
-        .await;
-
-    // 5. Store assistant reply
-    if let Some(reply) = response.message.content {
-        response_text = reply.clone();
-
-        SESSIONS.with(|s| {
-            if let Some(sessions) = s.borrow_mut().get_mut(&principal) {
-                if let Some(session) = sessions.iter_mut().find(|s| s.session_id == session_id) {
-                    session.messages.push(ChatMessage::assistant(reply));
-                }
-            }
-        });
-    }
-
-    response_text
+    reply
 }
 
-/// Get all sessions for the caller
-#[query]
-fn list_sessions() -> Vec<(u64, Option<String>, u64)> {
-    let principal = msg_caller();
+#[ic_cdk::query]
+fn list_sessions() -> Vec<(SessionId, String)> {
     SESSIONS.with(|s| {
         s.borrow()
-            .get(&principal)
-            .unwrap_or(&vec![])
             .iter()
-            .map(|session| (session.session_id, session.project_name.clone(), session.created_at))
+            .map(|(id, sess)| (id.clone(), sess.name.clone()))
             .collect()
     })
 }
 
-/// Get all messages in a session
-#[query]
-fn get_session_messages(session_id: u64) -> Vec<ChatMessage> {
-    let principal = msg_caller();
-    SESSIONS.with(|s| {
-        s.borrow()
-            .get(&principal)
-            .and_then(|sessions| {
-                sessions.iter().find(|s| s.session_id == session_id)
-            })
-            .map(|session| session.messages.clone())
-            .unwrap_or_default()
-    })
+#[ic_cdk::query]
+fn get_session(session_id: SessionId) -> Option<ChatSession> {
+    SESSIONS.with(|s| s.borrow().get(&session_id).cloned())
 }
 
+#[ic_cdk::update]
+async fn query_gemini_api(prompt: &str) -> String {
+    let api_key = "AIzaSyCCvHKeDsSX4kp0F1Fm-mLa6xwLxIiE8YU";
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={}",
+        api_key
+    );
 
-//---------------------------------------DID Generation---------------------------------------
-#[cfg(test)]
-#[test]
-fn generate_did() {
-    use candid::export_service;
-    export_service!();
-    std::fs::write("LexAi_backend.did", __export_service()).unwrap();
+    let headers = vec![HttpHeader {
+        name: "Content-Type".into(),
+        value: "application/json".into(),
+    }];
+
+    let json_body = json!({
+        "contents": [
+            {
+                "parts": [{ "text": prompt }]
+            }
+        ]
+    });
+
+    let request = HttpRequestArgs {
+        url,
+        max_response_bytes: Some(2_000_000),
+        method: HttpMethod::POST,
+        headers,
+        body: Some(serde_json::to_vec(&json_body).unwrap()),
+        transform: Some(TransformContext {
+            function: TransformFunc::new(canister_self(), "transform".to_string()),
+            context: vec![],
+        }),
+    };
+
+    match http_request(&request).await {
+        Ok(res) => String::from_utf8(res.body).unwrap_or("Invalid UTF-8".into()),
+        Err(e) => format!("Request failed: {:?}", e),
+    }
 }
+
+// Strips all data that is not needed from the original response.
+#[ic_cdk::query]
+fn transform(raw: TransformArgs) -> HttpRequestResult {
+    let headers = vec![
+        HttpHeader {
+            name: "Content-Security-Policy".to_string(),
+            value: "default-src 'self'".to_string(),
+        },
+        HttpHeader {
+            name: "Referrer-Policy".to_string(),
+            value: "strict-origin".to_string(),
+        },
+        HttpHeader {
+            name: "Permissions-Policy".to_string(),
+            value: "geolocation=(self)".to_string(),
+        },
+        HttpHeader {
+            name: "Strict-Transport-Security".to_string(),
+            value: "max-age=63072000".to_string(),
+        },
+        HttpHeader {
+            name: "X-Frame-Options".to_string(),
+            value: "DENY".to_string(),
+        },
+        HttpHeader {
+            name: "X-Content-Type-Options".to_string(),
+            value: "nosniff".to_string(),
+        },
+    ];
+
+    let mut res = HttpRequestResult {
+        status: raw.response.status.clone(),
+        body: raw.response.body.clone(),
+        headers,
+        ..Default::default()
+    };
+
+    if res.status == 200u8 {
+        res.body = raw.response.body;
+    } else {
+        ic_cdk::api::debug_print(format!("Received an error from coinbase: err = {:?}", raw));
+    }
+    res
+}
+
 
 

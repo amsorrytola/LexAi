@@ -33,6 +33,9 @@
       "packtool": ""
     }
   },
+  "experimental": {
+    "https_outcalls": true
+  },
   "output_env_file": ".env",
   "version": 1
 }
