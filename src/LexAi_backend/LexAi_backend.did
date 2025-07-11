@@ -1,34 +1,54 @@
-import "ic:canister/http_request";
-
-type ChatMessage = record {
-  role: text;
-  content: text;
+type User = record {
+    "principal": principal;
+    username: opt text;
+    email: opt text;
+    created_at: nat64;
 };
 
-type ChatSession = record {
-  name: text;
-  messages: vec ChatMessage;
+type ChatMessage = record {
+    role: text;
+    content: text;
+};
+
+type Session = record {
+    session_id: text;
+    "principal": principal;
+    title: opt text;
+    created_at: nat64;
+    messages: vec ChatMessage;
+};
+
+type LegalTemplate = record {
+    id: text;
+    name: text;
+    template_text: text;
+};
+
+type HeaderField = record {
+    name: text;
+    value: text;
+};
+
+type HttpResponse = record {
+    status: nat16;
+    headers: vec HeaderField;
+    body: vec nat8;
+};
+
+type TransformArgs = record {
+    response: HttpResponse;
+    context: vec nat8;
 };
 
 service : {
-  start_session: (text) -> (text);
-  chat: (text, text) -> (text);
-  list_sessions: () -> (vec record { text; text });
-  get_session: (text) -> (opt ChatSession);
-
-  query_gemini_api: (text) -> (text);
-
-  // Avoid dot notation completely
-  transform: (record {
-    context : vec nat8;
-    response : record {
-      status : nat16;
-      headers : vec record { name : text; value : text };
-      body : vec nat8;
-    };
-  }) -> (record {
-    status : nat16;
-    headers : vec record { name : text; value : text };
-    body : vec nat8;
-  });
+    get_or_register_user: () -> (User);
+    update_profile: (opt text, opt text) -> ();
+    start_session: (opt text) -> (text);
+    chat_in_session: (text, text) -> (text);
+    list_sessions: () -> (vec record { text; opt text; nat64 });
+    get_session_messages: (text) -> (vec ChatMessage);
+    generate_document: (text, vec record { text; text }) -> (text);
+    get_document: (text) -> (opt text);
+    transform: (TransformArgs) -> (HttpResponse) query;
+    add_template: (text, text, text) -> ();
 };
