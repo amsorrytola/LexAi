@@ -29,11 +29,11 @@ const AskAiPage = () => {
       prev.map((c) =>
         c.id === chatId
           ? {
-            ...c,
-            messages: [...c.messages, { role: 'user', content: message, timestamp: new Date().toISOString() }],
-            title: c.messages.length === 0 ? message.slice(0, 20) : c.title,
-            lastUpdated: Date.now()
-          }
+              ...c,
+              messages: [...c.messages, { role: 'user', content: message, timestamp: new Date().toISOString() }],
+              title: c.messages.length === 0 ? message.slice(0, 20) : c.title,
+              lastUpdated: Date.now()
+            }
           : c
       )
     );
@@ -44,13 +44,13 @@ const AskAiPage = () => {
         const updated = prev.map((c) =>
           c.id === chatId
             ? {
-              ...c,
-              messages: [
-                ...c.messages,
-                { role: 'assistant', content: 'This is a test reply from GPT.', timestamp: new Date().toISOString() }
-              ],
-              lastUpdated: Date.now()
-            }
+                ...c,
+                messages: [
+                  ...c.messages,
+                  { role: 'assistant', content: 'This is a test reply from GPT.', timestamp: new Date().toISOString() }
+                ],
+                lastUpdated: Date.now()
+              }
             : c
         );
         updated.sort((a, b) => b.lastUpdated - a.lastUpdated);
