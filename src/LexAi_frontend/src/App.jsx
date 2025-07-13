@@ -17,7 +17,7 @@ const AppContent = () => {
 
   return (
     <>
-      {location.pathname === "/" && <Navbar scrollY={scrollY} />}
+      <Navbar scrollY={scrollY} />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/ask" element={<AskAiPage />} />
