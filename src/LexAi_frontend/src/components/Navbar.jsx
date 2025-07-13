@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Scale, Menu, X } from 'lucide-react';
-// import LoginButton from './LoginButton';
+import LoginButton from './LoginButton';
 import { Link } from "react-router-dom";
 
 
-export default function Navbar({ scrollY }) {
+export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
+    <div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
@@ -24,7 +24,7 @@ export default function Navbar({ scrollY }) {
               <Link to="/ask" className="text-gray-700 hover:text-blue-600">Ask AI</Link>
               <Link to="/generate" className="text-gray-700 hover:text-blue-600">Generate Document</Link>
               
-              {/* <LoginButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" /> */}
+              <LoginButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" />
             </div>
           </div>
 
@@ -49,6 +49,7 @@ export default function Navbar({ scrollY }) {
           </div>
         </div>
       )}
-    </nav>
+     </div> 
+    
   );
 }
