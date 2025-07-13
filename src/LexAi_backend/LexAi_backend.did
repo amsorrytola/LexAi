@@ -41,14 +41,19 @@ type TransformArgs = record {
 };
 
 service : {
-    get_or_register_user: () -> (User);
-    update_profile: (opt text, opt text) -> ();
-    start_session: (opt text) -> (text);
-    chat_in_session: (text, text) -> (text);
-    list_sessions: () -> (vec record { text; opt text; nat64 });
-    get_session_messages: (text) -> (vec ChatMessage);
-    generate_document: (text, vec record { text; text }) -> (text);
-    get_document: (text) -> (opt text);
+    get_or_register_user: () -> (User) ;
+    update_profile: (opt text, opt text) -> () ;
+    start_session: (opt text) -> (text) ;
+    chat_in_session: (text, text) -> (text) ;
+    list_sessions: () -> (vec record { text; opt text; nat64 }) query;
+    get_session_messages: (text) -> (vec ChatMessage) query;
+    rename_session: (text, text) -> (bool) ;
+    delete_session: (text) -> (bool) ;
+    add_template: (text, text, text) -> () ;
+    init_templates: () -> () ;
+    get_templates_count: () -> (nat64) query;
+    list_templates: () -> (vec record { text; text }) query;
+    generate_document: (text, vec record { text; text }) -> (text) ;
+    get_document: (text) -> (opt text) query;
     transform: (TransformArgs) -> (HttpResponse) query;
-    add_template: (text, text, text) -> ();
 };
