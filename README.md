@@ -1,61 +1,208 @@
-# `LexAi`
+# ⚖️ LexAi — Your Decentralized AI Legal Assistant
 
-Welcome to your new `LexAi` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+LexAi is a decentralized AI-powered legal assistant built on the [Internet Computer Protocol (ICP)](https://internetcomputer.org/), designed to provide real-time legal guidance, session-based chat, and generate professional legal documents while preserving user privacy and data ownership.
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+---
 
-To learn more before you start working with `LexAi`, see the following documentation available online:
+## 🚀 Features
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Rust Canister Development Guide](https://internetcomputer.org/docs/current/developer-docs/backend/rust/)
-- [ic-cdk](https://docs.rs/ic-cdk)
-- [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
-- [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
+- 💬 **Chat-based Legal Guidance**: Interact with an AI trained for legal conversations.
+- 🧠 **Gemini API Integration**: Uses Google's Gemini LLM to generate high-quality responses and legal documents.
+- 📝 **Dynamic Document Generation**: Create contracts like NDAs, Rental Agreements, Employment Letters, and more using template + fields.
+- 🔐 **Decentralized Identity**: User sessions and data are tied to their unique ICP Principal.
+- 🗂 **Persistent Session History**: Store and retrieve past conversations securely.
+- 📄 **Custom Legal Templates**: Create and manage your own templates.
+- 🧾 **Downloadable Legal Docs**: Securely generate and download structured, ready-to-use documents.
+- 🛡️ **Privacy-First**: All user data is stored in canister stable memory—fully decentralized and private.
+  
+---
 
-If you want to start working on your project right away, you might want to try the following commands:
+## 🧱 Architecture
 
-```bash
-cd LexAi/
-dfx help
-dfx canister --help
 ```
 
-## Running the project locally
+Frontend (Next.js/React)
+|
+\|--> Calls Canister via @dfinity/agent
+|
+\|--> LexAi Canister (Rust + ic-cdk)
+|
+\|--> User Storage (StableBTreeMap\<Principal, User>)
+\|--> Session Storage (StableBTreeMap\<String, Session>)
+\|--> Document Storage (StableBTreeMap\<String, DocumentText>)
+\|--> Template Storage (StableBTreeMap\<String, LegalTemplate>)
+|
+\|--> Gemini API Integration via HTTPS Outcalls
 
-If you want to test your project locally, you can use the following commands:
+````
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer        | Tech Used                                    |
+|--------------|----------------------------------------------|
+| Frontend     | React, Tailwind CSS, Vite, @dfinity/agent    |
+| Backend      | Rust, `ic-cdk`, `ic-stable-structures`, Candid |
+| AI Engine    | Gemini 1.5 Flash API by Google               |
+| Platform     | Internet Computer Protocol (ICP)             |
+| Data Storage | Stable Memory on-chain via `StableBTreeMap`  |
+
+---
+
+## 🧪 Local Development Setup
+
+### 1. Prerequisites
+
+- [DFX SDK](https://smartcontracts.org/docs/quickstart/quickstart.html)
+- Node.js + npm
+- Rust & cargo (`rustup`)
+- Vite (frontend)
+
+### 2. Clone the Repo
 
 ```bash
-# Starts the replica, running in the background
-dfx start --background
+git clone https://github.com/YOUR_USERNAME/lexai.git
+cd lexai
+````
 
-# Deploys your canisters to the replica and generates your candid interface
+### 3. Start Local ICP Replica
+
+```bash
+dfx start --background
+```
+
+### 4. Build & Deploy Canisters
+
+```bash
 dfx deploy
 ```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
+> Ensure your `dfx.json` includes the canister entry for `LexAi_backend`.
 
-If you have made changes to your backend canister, you can generate a new candid interface with
-
-```bash
-npm run generate
-```
-
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
-
-If you are making frontend changes, you can start a development server with
+### 5. Start the Frontend
 
 ```bash
-npm start
+cd frontend
+npm install
+npm run dev
 ```
 
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+---
 
-### Note on frontend environment variables
+## 🔑 Core Canister Functions
 
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
+### 📌 User Management
 
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
+```rust
+update get_or_register_user() -> User
+update update_profile(username: Option<String>, email: Option<String>)
+```
+
+### 🧠 Chat & Session
+
+```rust
+update start_session(title: Option<String>) -> String
+update chat_in_session(session_id: String, input: String) -> String
+query get_session_messages(session_id: String) -> Vec<ChatMessage>
+update rename_session(session_id: String, new_title: String)
+update delete_session(session_id: String) -> bool
+query list_sessions() -> Vec<(String, Option<String>, u64)>
+```
+
+### 📄 Legal Document Generation
+
+```rust
+query list_templates() -> Vec<(String, String)>
+update generate_document(template_id: String, fields: Vec<(String, String)>) -> String
+query get_document(document_id: String) -> Option<String>
+query list_documents() -> Vec<String>
+update add_template(id: String, name: String, template_text: String)
+```
+
+---
+
+## 🧠 Gemini API Integration
+
+Gemini 1.5 Flash is used to power both the chatbot and document generator via HTTPS outcalls, with optional field replacement for legal documents.
+
+```rust
+async fn query_gemini_api(prompt: &str) -> String
+async fn query_gemini_api_document(prompt: &str) -> String
+```
+
+Use an API key with this endpoint:
+
+```plaintext
+https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+```
+
+Outcalls are routed via the IC’s HTTP interface with a transform function to sanitize headers.
+
+---
+
+## 🧾 Example Document Templates
+
+Built-in templates:
+
+* Non-Disclosure Agreement (NDA)
+* Employment Agreement
+* Rental Agreement
+* Service Agreement
+* Purchase Agreement
+* Partnership Agreement
+
+> You can easily add your own via `add_template`.
+
+---
+
+## 📂 Directory Structure
+
+```
+/lexai
+├── backend/
+│   └── src/
+│       └── lib.rs        # Main Rust canister logic
+├── frontend/
+│   └── src/
+│       ├── pages/        # React pages like Chat, Profile, etc.
+│       ├── components/   # Reusable UI components
+│       └── services/     # Dfinity Agent integration
+├── dfx.json              # Canister config
+└── README.md
+```
+
+---
+
+## 💡 Future Improvements
+
+* ✅ Document download as PDF
+* ✅ Chat session naming + renaming
+* ⏳ Admin panel for managing templates
+* ⏳ Integration with wallet-based login (Plug, Stoic)
+* ⏳ Chat context previews per session
+
+---
+
+## 📜 License
+
+MIT License © 2025 LexAi Team
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please fork the repo and submit a PR.
+
+---
+
+## 🧠 Built With ❤️ On Internet Computer
+
+Powering privacy-first legal tools using AI + Web3.
+
+```
+
+---
+
+Let me know if you'd like a shorter version for GitHub or if you need a `frontend` README too.
+```
