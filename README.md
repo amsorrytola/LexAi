@@ -62,7 +62,7 @@ Frontend (Next.js/React)
 ### 2. Clone the Repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/lexai.git
+git clone https://github.com/YOUR_USERNAME/lexai.git](https://github.com/amsorrytola/LexAi
 cd lexai
 ````
 
@@ -202,7 +202,3 @@ Powering privacy-first legal tools using AI + Web3.
 
 ```
 
----
-
-Let me know if you'd like a shorter version for GitHub or if you need a `frontend` README too.
-```
