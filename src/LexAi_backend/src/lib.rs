@@ -512,7 +512,7 @@ fn get_document(document_id: String) -> Option<String> {
 }
 
 async fn query_gemini_api_document(prompt: &str) -> String {
-    let api_key = "AIzaSyCCvHKeDsSX4kp0F1Fm-mLa6xwLxIiE8YU"; // Replace with your actual Gemini API key
+    let api_key = ""; // Replace with your actual Gemini API key
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}",
         api_key
@@ -590,7 +590,7 @@ async fn query_gemini_api_document(prompt: &str) -> String {
 
 // Gemini API Integration
 async fn query_gemini_api(prompt: &str) -> String {
-    let api_key = "AIzaSyCCvHKeDsSX4kp0F1Fm-mLa6xwLxIiE8YU"; // Replace with your actual Gemini API key
+    let api_key = ""; // Replace with your actual Gemini API key
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={}",
         api_key
