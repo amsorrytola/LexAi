@@ -29,12 +29,12 @@ export const useUserStore = create((set) => ({
     console.log("⚙️ Initializing AuthClient and Actor...");
     try {
       const authClient = await AuthClient.create();
-      const identity = authClient.getIdentity();
-      const actor = createActor(canisterId, {
+      const identity =  authClient.getIdentity();
+      const actor = await createActor(canisterId, {
         agentOptions: { identity }
       });
       const isAuthenticated = await authClient.isAuthenticated();
-      const principal = isAuthenticated ? identity.getPrincipal().toText() : null;
+      const principal =  isAuthenticated ? identity.getPrincipal().toText() : null;
 
       console.log("✅ AuthClient created.");
       console.log("🔗 Principal:", principal);

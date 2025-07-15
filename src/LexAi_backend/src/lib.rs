@@ -214,6 +214,21 @@ fn list_templates() -> Vec<(String, String)> {
 }
 
 #[ic_cdk::query]
+fn list_documents() -> Vec<String> {
+    let principal = msg_caller();
+    DOCUMENTS.with(|documents| {
+        let map = documents.borrow();
+        map.iter()
+            .filter(|(id, _)| {
+                id.0.starts_with("doc_") 
+            })
+            .map(|(id, _)| id.0.clone())
+            .collect()
+    })
+}
+
+
+#[ic_cdk::query]
 fn get_templates_count() -> u64 {
     TEMPLATES.with(|templates| {
         let map = templates.borrow();
@@ -257,6 +272,7 @@ fn init_templates() {
         });
     });
 }
+
 
 // User Management Functions
 #[ic_cdk::update]
@@ -494,6 +510,7 @@ fn get_document(document_id: String) -> Option<String> {
         document
     })
 }
+
 async fn query_gemini_api_document(prompt: &str) -> String {
     let api_key = "AIzaSyCCvHKeDsSX4kp0F1Fm-mLa6xwLxIiE8YU"; // Replace with your actual Gemini API key
     let url = format!(

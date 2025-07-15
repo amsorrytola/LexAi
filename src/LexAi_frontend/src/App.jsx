@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import Navbar from './components/Navbar';
 import AskAiPage from './pages/AskAiPage';
 import LegalDocumentGenerator from './pages/LegalDocumentGenerator';
+import ProfilePage from './pages/ProfilePage';
 
 const AppContent = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const AppContent = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/ask" element={<AskAiPage />} />
         <Route path="/generate" element={<LegalDocumentGenerator/>} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </>
   );

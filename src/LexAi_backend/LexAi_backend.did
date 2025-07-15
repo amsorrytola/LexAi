@@ -53,6 +53,7 @@ service : {
     init_templates: () -> () ;
     get_templates_count: () -> (nat64) query;
     list_templates: () -> (vec record { text; text }) query;
+    list_documents: () -> (vec text) query;
     generate_document: (text, vec record { text; text }) -> (text) ;
     get_document: (text) -> (opt text) query;
     transform: (TransformArgs) -> (HttpResponse) query;

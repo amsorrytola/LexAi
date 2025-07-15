@@ -23,7 +23,7 @@ export default function Navbar() {
               <Link to="/" className="mr-4">Home</Link>
               <Link to="/ask" className="text-gray-700 hover:text-blue-600">Ask AI</Link>
               <Link to="/generate" className="text-gray-700 hover:text-blue-600">Generate Document</Link>
-              
+              <Link to="/profile" className="text-gray-700 hover:text-blue-600">Profile</Link>
               <LoginButton className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" />
             </div>
           </div>
